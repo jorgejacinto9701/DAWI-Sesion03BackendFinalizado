@@ -1,11 +1,16 @@
 package com.empresa.controller;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+
+import javax.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.CollectionUtils;
+import org.springframework.validation.Errors;
+import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -16,7 +21,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.empresa.entity.Alumno;
 import com.empresa.service.AlumnoService;
-import com.empresa.util.Constantes;
 
 @RestController
 @RequestMapping("/rest/alumno")
@@ -35,18 +39,35 @@ public class AlumnoController {
 
 	@PostMapping
 	@ResponseBody
-	public  ResponseEntity<Map<String, Object>> insertaAlumno(@RequestBody Alumno obj){
-		Map<String, Object> salida = new HashMap<>();
-		try {
-			Alumno objSalida = alumnoService.insertaActualizaAlumno(obj);
-			if (objSalida == null) {
-				salida.put("mensaje", Constantes.MENSAJE_REG_ERROR);
-			}else {
-				salida.put("mensaje", Constantes.MENSAJE_REG_EXITOSO);
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-			salida.put("mensaje", Constantes.MENSAJE_REG_ERROR);
+	public ResponseEntity<?> inserta(@Valid @RequestBody Alumno obj, Errors errors){
+		HashMap<String, Object> salida = new HashMap<>();
+		
+		List<ObjectError> lstErrors =  errors.getAllErrors();
+		List<String> lstMensajes = new ArrayList<String>();
+		for (ObjectError objectError : lstErrors) {
+			objectError.getDefaultMessage();
+			lstMensajes.add(objectError.getDefaultMessage());
+		}
+		if (!CollectionUtils.isEmpty(lstMensajes)) {
+			salida.put("errores", lstMensajes);
+			return ResponseEntity.ok(salida);
+		}
+		
+		List<Alumno> lstAlumno = alumnoService.listaAlumnoPorDni(obj.getDni());
+		if (!CollectionUtils.isEmpty(lstAlumno)) {
+			salida.put("mensaje", "Ya existe un alumno con DNI ==> " + obj.getDni());
+			return ResponseEntity.ok(salida);
+		}
+		lstAlumno = alumnoService.listaAlumnoPorCorreo(obj.getCorreo());
+		if (!CollectionUtils.isEmpty(lstAlumno)) {
+			salida.put("mensaje", "Ya existe un alumno con correo ==> " + obj.getCorreo());
+			return ResponseEntity.ok(salida);
+		}
+		Alumno objSalida = alumnoService.insertaActualizaAlumno(obj);
+		if (objSalida == null) {
+			salida.put("mensaje", "Error en el registro");
+		}else {
+			salida.put("mensaje", "Se registró el alumno ==> " + objSalida.getIdAlumno());
 		}
 		return ResponseEntity.ok(salida);
 	}
