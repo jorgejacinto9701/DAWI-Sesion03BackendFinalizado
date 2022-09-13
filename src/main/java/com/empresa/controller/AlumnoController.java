@@ -41,33 +41,33 @@ public class AlumnoController {
 	@ResponseBody
 	public ResponseEntity<?> inserta(@Valid @RequestBody Alumno obj, Errors errors){
 		HashMap<String, Object> salida = new HashMap<>();
+		List<String> lstMensajes = new ArrayList<String>();
+		salida.put("errores", lstMensajes);
 		
 		List<ObjectError> lstErrors =  errors.getAllErrors();
-		List<String> lstMensajes = new ArrayList<String>();
 		for (ObjectError objectError : lstErrors) {
 			objectError.getDefaultMessage();
 			lstMensajes.add(objectError.getDefaultMessage());
 		}
 		if (!CollectionUtils.isEmpty(lstMensajes)) {
-			salida.put("errores", lstMensajes);
 			return ResponseEntity.ok(salida);
 		}
 		
 		List<Alumno> lstAlumno = alumnoService.listaAlumnoPorDni(obj.getDni());
 		if (!CollectionUtils.isEmpty(lstAlumno)) {
-			salida.put("mensaje", "Ya existe un alumno con DNI ==> " + obj.getDni());
+			lstMensajes.add("Ya existe un alumno con DNI ==> " + obj.getDni());
 			return ResponseEntity.ok(salida);
 		}
 		lstAlumno = alumnoService.listaAlumnoPorCorreo(obj.getCorreo());
 		if (!CollectionUtils.isEmpty(lstAlumno)) {
-			salida.put("mensaje", "Ya existe un alumno con correo ==> " + obj.getCorreo());
+			lstMensajes.add("Ya existe un alumno con correo ==> " + obj.getCorreo());
 			return ResponseEntity.ok(salida);
 		}
 		Alumno objSalida = alumnoService.insertaActualizaAlumno(obj);
 		if (objSalida == null) {
-			salida.put("mensaje", "Error en el registro");
+			lstMensajes.add("Error en el registro");
 		}else {
-			salida.put("mensaje", "Se registró el alumno ==> " + objSalida.getIdAlumno());
+			lstMensajes.add("Se registró el alumno ==> " + objSalida.getIdAlumno());
 		}
 		return ResponseEntity.ok(salida);
 	}
